@@ -28,8 +28,8 @@ objects:
       dockerStrategy:
         dockerfilePath: Dockerfile
         env:
-        - name: simulationName
-          value: KafkaSaveTelemetrySimulation
+        - name: SIMULATION-NAME
+          value: 'KafkaSaveTelemetrySimulation'
     output: 
       to:
         kind: "ImageStreamTag"
