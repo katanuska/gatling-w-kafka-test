@@ -23,7 +23,7 @@ objects:
       - type: "ImageChange"
     source: 
       git:
-        uri: "https://github.com/nbabic298/gatling-w-kafka-test.git"
+        uri: "https://github.com/katanuska/gatling-w-kafka-test.git"
     strategy: 
       dockerStrategy:
         dockerfilePath: Dockerfile

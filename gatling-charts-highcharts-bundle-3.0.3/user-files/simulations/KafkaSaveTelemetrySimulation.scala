@@ -10,7 +10,7 @@ class KafkaSaveTelemetrySimulation extends Simulation {
     .properties(
       Map(
         ProducerConfig.ACKS_CONFIG -> "1",
-        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> "http://192.168.113.134:29092",
+        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> "my-cluster-kafka-brokers.strimzi0113:9092",
         ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG ->
           "org.apache.kafka.common.serialization.StringSerializer",
         ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG ->
