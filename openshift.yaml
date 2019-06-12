@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: user-template
+objects:
+- kind: ImageStream
+  apiVersion: image.openshift.io/v1
+  metadata:
+    name: kafka-test-gatling
+  spec:
+    lookupPolicy:
+      local: false
+  status:
+    dockerImageRepository: 'docker-registry.default.svc:5000/om-thingstalk-a/kafka-test-gatling'
+
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: "gatling-kafka-test" 
+  spec:
+    runPolicy: "Serial" 
+    triggers: 
+      - type: "ImageChange"
+    source: 
+      git:
+        uri: "https://github.com/nbabic298/gatling-w-kafka-test.git"
+    strategy: 
+      dockerStrategy:
+        dockerfilePath: Dockerfile
+    output: 
+      to:
+        kind: "ImageStreamTag"
+        name: "kafka-test-gatling:latest"
+
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    name: kafka-test-gatling
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+      name: kafka-test-gatling
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          name: kafka-test-gatling
+      spec:
+        containers:
+          - image: >-
+              docker-registry.default.svc:5000/om-thingstalk-a/kafka-test-gatling
+            imagePullPolicy: Always
+            name: kafka-test-gatling
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+      - type: ConfigChange
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+            - kafka-test-gatling
+          from:
+            kind: ImageStreamTag
+            name: 'kafka-test-gatling:latest'
+        type: ImageChange
