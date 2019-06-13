@@ -20,7 +20,7 @@ class KafkaSaveTelemetrySimulation extends Simulation {
     .feed(jsonFile("saveTelemetry.json").circular)
     .exec(kafka("request").send[String](
       "{" + 
-        "\"messageAsJson\": \"${messageAsJson}\"," +
+        "\"messageAsJson\": ${messageAsJson.jsonStringify()}," +
         "\"deviceId\": ${deviceId}," +
         "\"applicationId\": ${applicationId}," +
         "\"assetUnitIds\": ${assetUnitIds} " +
