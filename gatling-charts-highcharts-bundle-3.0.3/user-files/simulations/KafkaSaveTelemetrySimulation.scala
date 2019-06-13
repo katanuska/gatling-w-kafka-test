@@ -23,7 +23,7 @@ class KafkaSaveTelemetrySimulation extends Simulation {
         "\"messageAsJson\": ${messageAsJson}," +
         "\"deviceId\": ${deviceId}," +
         "\"applicationId\": ${applicationId}," +
-        "\"assetUnitIds\": ${assetUnitIds}," +
+        "\"assetUnitIds\": ${assetUnitIds}" +
       "}"))
 
   setUp(

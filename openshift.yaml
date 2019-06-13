@@ -1,8 +1,27 @@
-apiVersion: v1
 kind: Template
+apiVersion: v1
 metadata:
-  name: user-template
+  name: gatling-template
 objects:
+
+- kind: PersistentVolumeClaim
+  apiVersion: v1
+  metadata:
+    annotations:
+      volume.beta.kubernetes.io/storage-provisioner: kubernetes.io/vsphere-volume
+    finalizers:
+      - kubernetes.io/pvc-protection
+    name: gatling-report
+    labels:
+      app: gatlig-report
+  spec:
+    accessModes:
+      - ReadWriteMany
+    resources:
+      requests:
+        storage: '500Mi'
+    storageClassName: vsphere-standard
+
 - kind: ImageStream
   apiVersion: image.openshift.io/v1
   metadata:
@@ -68,16 +87,15 @@ objects:
             resources: {}
             terminationMessagePath: /dev/termination-log
             terminationMessagePolicy: File
-          - image: nginx:1.17.0-alpine
-            imagePullPolicy: IfNotPresent
-            name: kafka-test-gatling-web
-            ports:
-            - containerPort: 80
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        volumes:
+        - name: kafka-test-gatling-volume
+          persistentVolumeClaim:
+            claimName: gatling-report
     test: false
     triggers:
       - type: ConfigChange
@@ -89,3 +107,170 @@ objects:
             kind: ImageStreamTag
             name: 'kafka-test-gatling:latest'
         type: ImageChange
+
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: "gatling-report"
+  spec:
+    lookupPolicy:
+      local: false
+  status:
+    dockerImageRepository: 'docker-registry.default.svc:5000/om-thingstalk-a/gatling-report'
+
+- kind: BuildConfig
+  apiVersion: build.openshift.io/v1
+  metadata:
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: 'true'
+    name: gatling-report
+    labels:
+      template: nginx-example
+      template.openshift.io/template-instance-owner: 100de673-8d21-11e9-82d0-005056805611
+  spec:
+    failedBuildsHistoryLimit: 5
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'gatling-report:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        uri: 'https://github.com/sclorg/nginx-ex.git'
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'nginx:1.12'
+          namespace: openshift
+      type: Source
+    successfulBuildsHistoryLimit: 5
+    triggers:
+    - type: ImageChange
+    - type: ConfigChange
+    - github:
+        secret: I5gqtR1n67a1hklyUlivDBHkOuU41VkwpoE4Fmx7
+      type: GitHub
+    - generic:
+        secret: VWcAW5mENgWcsMbJuKdun6wwKxIwSpUghj21RHoe
+      type: Generic
+
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    labels:
+      app: gatling-report
+    name: gatling-report
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      name: gatling-report
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          name: gatling-report
+        name: gatling-report
+      spec:
+        containers:
+          - image: >-
+              docker-registry.default.svc:5000/om-thingstalk-a/gatling-report:latest
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 3
+            name: gatling-report
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 3
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 3
+            resources:
+              limits:
+                memory: 512Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+              - mountPath: /usr/share/nginx/html
+                name: gatling-report-volume
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+          - name: gatling-report-volume
+            persistentVolumeClaim:
+              claimName: gatling-report
+    test: false
+    triggers:
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+            - gatling-report
+          from:
+            kind: ImageStreamTag
+            name: 'gatling-report:latest'
+            namespace: om-thingstalk-a
+        type: ImageChange
+      - type: ConfigChange
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: gatling-report
+    name: gatling-report
+  spec:
+    ports:
+      - name: web
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+    selector:
+      name: gatling-report
+    sessionAffinity: None
+    type: ClusterIP
+
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      app: gatling-report
+    name: gatling-report
+  spec:
+    host: gatling.apps.thingstalk.eu
+    to:
+      kind: Service
+      name:gatling-report
+      weight: 100
+    wildcardPolicy: None
