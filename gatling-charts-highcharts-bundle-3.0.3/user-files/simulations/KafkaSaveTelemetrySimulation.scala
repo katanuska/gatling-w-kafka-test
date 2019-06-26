@@ -20,20 +20,22 @@ class KafkaSaveTelemetrySimulation extends Simulation {
     .exec {
         session => session.set("messageAsJson", """{ \"consumption\": 3.0, \"time\": """ + (System.currentTimeMillis - 100000) + "}")
     }
-    .feed(jsonFile("saveTelemetry.json").circular)
+    //.feed(jsonFile("saveTelemetry.json").circular)
+    .feed(csv("assetUnitsAndDevices.csv").random)
     .exec(kafka("request").send[String](
       "{" + 
         "\"messageAsJson\": ${messageAsJson.jsonStringify()}," +
         "\"deviceId\": ${deviceId}," +
         "\"applicationId\": ${applicationId}," +
-        "\"assetUnitIds\": ${assetUnitIds} " +
+        "\"assetUnitIds\": [${assetUnitId}] " +
       "}"))
 
   setUp(
     scn
       //.inject(rampUsersPerSec(5000) to 10000 during (10 seconds)))
       .inject(
-        constantUsersPerSec(1000) during (10 seconds)
+        constantUsersPerSec(10000) during (10 seconds)
       ))
     .protocols(kafkaConf)
+  
 }
