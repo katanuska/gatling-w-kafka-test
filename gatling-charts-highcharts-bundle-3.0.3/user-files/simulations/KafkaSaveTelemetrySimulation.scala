@@ -18,7 +18,7 @@ class KafkaSaveTelemetrySimulation extends Simulation {
 
   val scn = scenario("Test telemetry service and Cassandra")
     .exec {
-        session => session.set("messageAsJson", """{ \"consumption\": 3.0, \"time\": """ + (System.currentTimeMillis - 100000) + "}")
+        session => session.set("messageAsJson", """{ "consumption": 3.0, "time": """ + (System.currentTimeMillis - 100000) + "}")
     }
     //.feed(jsonFile("saveTelemetry.json").circular)
     .feed(csv("assetUnitsAndDevices.csv").random)
