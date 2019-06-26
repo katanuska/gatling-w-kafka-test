@@ -10,7 +10,8 @@ class KafkaSaveTelemetrySimulation extends Simulation {
     .properties(
       Map(
         ProducerConfig.ACKS_CONFIG -> "1",
-        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> "my-cluster-kafka-brokers.strimzi0113:9092",
+        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> "
+        :9092",
         ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG ->
           "org.apache.kafka.common.serialization.StringSerializer",
         ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG ->
@@ -26,7 +27,7 @@ class KafkaSaveTelemetrySimulation extends Simulation {
       "{" + 
         "\"messageAsJson\": ${messageAsJson.jsonStringify()}," +
         "\"deviceId\": ${deviceId}," +
-        "\"applicationId\": ${applicationId}," +
+        "\"applicationId\": 51," +
         "\"assetUnitIds\": [${assetUnitId}] " +
       "}"))
 
